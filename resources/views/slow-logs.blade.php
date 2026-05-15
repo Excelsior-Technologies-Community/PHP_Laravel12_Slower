@@ -1,578 +1,402 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
-    <title>Slow Query Dashboard</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slow Logs - Performance Monitor</title>
     <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:'Segoe UI',sans-serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        body{
-            background:#0f172a;
-            color:white;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1a202c;
         }
 
-        .header{
-            background:#1e293b;
-            padding:25px;
-            text-align:center;
-            box-shadow:0 4px 15px rgba(0,0,0,0.3);
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
         }
 
-        .header h1{
-            margin-bottom:10px;
-            font-size:34px;
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
         }
 
-        .header p{
-            color:#cbd5e1;
+        .header p {
+            color: #718096;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
         }
 
-        .container{
-            width:90%;
-            margin:40px auto;
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
         }
 
-        .top-buttons{
-            margin-bottom:25px;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .btn{
-            background:linear-gradient(135deg,#2563eb,#0ea5e9);
-            color:white;
-            padding:12px 22px;
-            text-decoration:none;
-            border-radius:10px;
-            display:inline-block;
-            transition:0.3s ease;
-            font-weight:600;
-            box-shadow:0 5px 15px rgba(37,99,235,0.3);
+        .stat-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
         }
 
-        .btn:hover{
-            transform:translateY(-2px);
-            box-shadow:0 8px 18px rgba(14,165,233,0.4);
+        .stat-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #718096;
+            font-weight: 600;
         }
 
-        /* =======================
-           STATS CARDS
-        ======================= */
-
-        .cards{
-            display:grid;
-            grid-template-columns:repeat(4,1fr);
-            gap:20px;
-            margin-bottom:30px;
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-top: 0.25rem;
         }
 
-        .card{
-            background:#1e293b;
-            padding:25px;
-            border-radius:16px;
-            text-align:center;
-            box-shadow:0 6px 15px rgba(0,0,0,0.3);
-            transition:0.3s;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
         }
 
-        .card:hover{
-            transform:translateY(-5px);
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
         }
 
-        .card p{
-            color:#cbd5e1;
-            margin-bottom:10px;
+        .btn-primary:hover {
+            background: #2563eb;
         }
 
-        .card h2{
-            color:#38bdf8;
-            font-size:32px;
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
         }
 
-        /* =======================
-           SEARCH SECTION
-        ======================= */
-
-        .search-box{
-            background:#1e293b;
-            padding:20px;
-            border-radius:16px;
-            margin-bottom:25px;
-            display:flex;
-            gap:15px;
-            align-items:center;
-            flex-wrap:wrap;
-            box-shadow:0 6px 20px rgba(0,0,0,0.3);
+        .filter-bar {
+            background: white;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: flex-end;
         }
 
-        input{
-            padding:13px;
-            border:none;
-            border-radius:10px;
-            width:260px;
-            background:#334155;
-            color:white;
-            outline:none;
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
         }
 
-        input::placeholder{
-            color:#cbd5e1;
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #4a5568;
         }
 
-        button{
-            padding:13px 20px;
-            border:none;
-            background:linear-gradient(135deg,#0ea5e9,#2563eb);
-            color:white;
-            border-radius:10px;
-            cursor:pointer;
-            font-weight:600;
-            transition:0.3s;
+        .filter-group input, .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
         }
 
-        button:hover{
-            transform:translateY(-2px);
+        .table-wrapper {
+            background: white;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
         }
 
-        /* =======================
-           TABLE
-        ======================= */
-
-        .table-wrapper{
-            background:#1e293b;
-            border-radius:16px;
-            overflow:hidden;
-            box-shadow:0 10px 25px rgba(0,0,0,0.4);
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        table{
-            width:100%;
-            border-collapse:collapse;
+        th {
+            text-align: left;
+            padding: 0.875rem 1rem;
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        th{
-            background:#334155;
-            padding:16px;
-            text-align:left;
-            color:#f8fafc;
+        td {
+            padding: 0.875rem 1rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #4b5563;
         }
 
-        td{
-            padding:16px;
-            border-bottom:1px solid #334155;
-            color:#e2e8f0;
+        tr:hover {
+            background: #f9fafb;
         }
 
-        tr{
-            transition:0.3s;
+        .query-code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.75rem;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            max-width: 500px;
+            overflow-x: auto;
         }
 
-        tr:hover{
-            background:#273549;
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
         }
 
-        .query-box{
-            max-width:500px;
-            word-wrap:break-word;
-            color:#cbd5e1;
-            line-height:1.6;
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
-        /* =======================
-           BADGES
-        ======================= */
-
-        .badge{
-            background:#ef4444;
-            color:white;
-            padding:7px 14px;
-            border-radius:20px;
-            font-size:12px;
-            font-weight:600;
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .moderate{
-            background:#f59e0b;
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
         }
 
-        /* =======================
-           PAGINATION
-        ======================= */
-
-        .custom-pagination{
-            margin-top:35px;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:10px;
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
         }
 
-        .page-btn,
-        .page-number{
-            padding:12px 18px;
-            text-decoration:none;
-            border-radius:10px;
-            background:#0f172a;
-            color:white;
-            font-weight:600;
-            transition:0.3s ease;
-            border:1px solid #334155;
-            min-width:45px;
-            text-align:center;
+        .pagination a, .pagination span {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            font-size: 0.875rem;
+            color: #4b5563;
+            background: white;
+            border: 1px solid #e5e7eb;
         }
 
-        .page-btn:hover,
-        .page-number:hover{
-            background:#2563eb;
-            transform:translateY(-2px);
-            box-shadow:0 5px 12px rgba(37,99,235,0.4);
+        .pagination .active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
         }
 
-        .page-number.active{
-            background:linear-gradient(135deg,#2563eb,#0ea5e9);
-            border:none;
-            box-shadow:0 6px 15px rgba(14,165,233,0.4);
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
         }
 
-        .page-btn.disabled{
-            opacity:0.4;
-            pointer-events:none;
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
 
-        .dots{
-            color:#94a3b8;
-            font-size:18px;
-            padding:0 5px;
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
         }
 
-        .empty{
-            text-align:center;
-            padding:30px;
-            color:#cbd5e1;
-        }
-
-        /* =======================
-           RESPONSIVE
-        ======================= */
-
-        @media(max-width:992px){
-
-            .cards{
-                grid-template-columns:repeat(2,1fr);
-            }
-        }
-
-        @media(max-width:768px){
-
-            .header h1{
-                font-size:26px;
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
             }
 
-            .cards{
-                grid-template-columns:1fr;
-            }
-
-            .search-box{
-                flex-direction:column;
-                align-items:stretch;
-            }
-
-            input{
-                width:100%;
-            }
-
-            .custom-pagination{
-                gap:6px;
-            }
-
-            .page-btn,
-            .page-number{
-                padding:10px 14px;
-                font-size:14px;
+            .filter-bar {
+                flex-direction: column;
             }
         }
-
     </style>
-
 </head>
-
 <body>
-
     <div class="header">
-
-        <h1>Slow Query Analytics Dashboard</h1>
-
-        <p>Laravel Slower Performance Monitoring System</p>
-
+        <h1> Slow Query Analytics</h1>
+        <p>Monitor and optimize database performance</p>
     </div>
 
     <div class="container">
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
 
-        <div class="top-buttons">
-
-            <a href="/products" class="btn">
-                ← Back To Products
-            </a>
-
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <a href="{{ route('products') }}" class="btn">← Back to Products</a>
+            <form action="{{ route('slow-logs.clear') }}" method="POST" style="display: inline;">
+                @csrf
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Clear all logs?')">Clear All Logs</button>
+            </form>
         </div>
 
-        <!-- STATISTICS -->
-
-        <div class="cards">
-
-            <div class="card">
-
-                <p>Total Slow Queries</p>
-
-                <h2>{{ $totalLogs }}</h2>
-
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Total Slow Queries</div>
+                <div class="value">{{ number_format($totalLogs) }}</div>
             </div>
-
-            <div class="card">
-
-                <p>Highest Query Time</p>
-
-                <h2>{{ $maxTime }} ms</h2>
-
+            <div class="stat-card">
+                <div class="label">Highest Time</div>
+                <div class="value">{{ number_format($maxTime) }} ms</div>
             </div>
-
-            <div class="card">
-
-                <p>Average Query Time</p>
-
-                <h2>{{ $avgTime }} ms</h2>
-
+            <div class="stat-card">
+                <div class="label">Average Time</div>
+                <div class="value">{{ number_format($avgTime) }} ms</div>
             </div>
-
-            <div class="card">
-
-                <p>Today's Logs</p>
-
-                <h2>{{ $todayLogs }}</h2>
-
+            <div class="stat-card">
+                <div class="label">Today's Logs</div>
+                <div class="value">{{ number_format($todayLogs) }}</div>
             </div>
-
         </div>
 
-        <!-- SEARCH -->
-
-        <form method="GET">
-
-            <div class="search-box">
-
-                <input
-                    type="text"
-                    name="search"
-                    placeholder="Search SQL Query"
-                    value="{{ request('search') }}"
-                >
-
-                <input
-                    type="number"
-                    name="time"
-                    placeholder="Minimum Query Time"
-                    value="{{ request('time') }}"
-                >
-
-                <button type="submit">
-                    Filter Logs
-                </button>
-
+        <!-- Index Suggestions -->
+        @if($indexSuggestions->count() > 0)
+            <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+                <strong> Index Suggestions:</strong>
+                <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                    @foreach($indexSuggestions->take(3) as $suggestion)
+                        <li>Consider adding index on <code>{{ $suggestion->column_name }}</code> (appeared {{ $suggestion->frequency }} times)</li>
+                    @endforeach
+                </ul>
             </div>
+        @endif
 
+        <!-- Slowest Queries Summary -->
+        @if($slowestQueries->count() > 0)
+            <div style="background: white; border-radius: 0.5rem; border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.875rem; margin-bottom: 0.75rem;"> Top 5 Slowest Queries</h3>
+                @foreach($slowestQueries as $query)
+                    <div style="font-size: 0.75rem; padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+                        <code>{{ \Illuminate\Support\Str::limit($query->sql, 100) }}</code>
+                        <span style="float: right;">
+                            <span class="badge badge-danger">{{ round($query->avg_time) }} ms avg</span>
+                            <span class="badge badge-warning">{{ $query->count }}x</span>
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        <!-- Filter Bar -->
+        <form method="GET" class="filter-bar">
+            <div class="filter-group">
+                <label>Search SQL</label>
+                <input type="text" name="search" placeholder="Search..." value="{{ request('search') }}">
+            </div>
+            <div class="filter-group">
+                <label>Min Time (ms)</label>
+                <input type="number" name="time" placeholder="Min" value="{{ request('time') }}">
+            </div>
+            <div class="filter-group">
+                <label>Max Time (ms)</label>
+                <input type="number" name="time_max" placeholder="Max" value="{{ request('time_max') }}">
+            </div>
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+            </div>
         </form>
 
-        <!-- TABLE -->
-
+        <!-- Logs Table -->
         <div class="table-wrapper">
-
             <table>
-
                 <thead>
-
                     <tr>
-
                         <th>ID</th>
-
                         <th>SQL Query</th>
-
-                        <th>Query Time</th>
-
+                        <th>Time</th>
                         <th>Status</th>
-
-                        <th>Created At</th>
-
+                        <th>Date</th>
+                        <th>Actions</th>
                     </tr>
-
                 </thead>
-
                 <tbody>
-
                     @forelse($logs as $log)
-
                     <tr>
-
                         <td>{{ $log->id }}</td>
-
-                        <td class="query-box">
-
-                            {{ Str::limit($log->sql, 120) }}
-
-                        </td>
-
                         <td>
-
-                            {{ $log->time }} ms
-
-                        </td>
-
-                        <td>
-
-                            @if($log->time > 500)
-
-                                <span class="badge">
-                                    Very Slow
-                                </span>
-
-                            @else
-
-                                <span class="badge moderate">
-                                    Moderate
-                                </span>
-
+                            <div class="query-code">
+                                {{ \Illuminate\Support\Str::limit($log->sql, 80) }}
+                            </div>
+                            @if($log->recommendation)
+                                <div style="font-size: 0.7rem; color: #718096; margin-top: 0.25rem;">
+                                    {{ $log->recommendation }}
+                                </div>
                             @endif
-
                         </td>
-
+                        <td><strong>{{ $log->time }} ms</strong></td>
                         <td>
-
-                            {{ $log->created_at }}
-
+                            @if($log->time > 500)
+                                <span class="badge badge-danger">Critical</span>
+                            @elseif($log->time > 200)
+                                <span class="badge badge-warning">Warning</span>
+                            @else
+                                <span class="badge badge-success">OK</span>
+                            @endif
                         </td>
-
+                        <td>{{ \Carbon\Carbon::parse($log->created_at)->diffForHumans() }}</td>
+                        <td>
+                            <a href="{{ route('slow-logs.show', $log->id) }}" style="text-decoration: none; color: #3b82f6;">View</a>
+                            <form action="{{ route('slow-logs.destroy', $log->id) }}" method="POST" style="display: inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; margin-left: 0.5rem;" onclick="return confirm('Delete this log?')">Delete</button>
+                            </form>
+                        </td>
                     </tr>
-
                     @empty
-
-                    <tr>
-
-                        <td colspan="5" class="empty">
-
-                            No slow logs found.
-
-                        </td>
-
-                    </tr>
-
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 3rem;">No slow logs recorded yet.</td>
+                        </tr>
                     @endforelse
-
                 </tbody>
-
             </table>
-
         </div>
 
-        <!-- PREMIUM PAGINATION -->
-
-        <div class="custom-pagination">
-
-            {{-- Previous Button --}}
-            @if ($logs->onFirstPage())
-
-                <span class="page-btn disabled">
-                    ← Previous
-                </span>
-
-            @else
-
-                <a href="{{ $logs->previousPageUrl() }}" class="page-btn">
-                    ← Previous
-                </a>
-
-            @endif
-
-
-            {{-- First Page --}}
-            @if($logs->currentPage() > 3)
-
-                <a href="{{ $logs->url(1) }}" class="page-number">
-                    1
-                </a>
-
-                @if($logs->currentPage() > 4)
-
-                    <span class="dots">...</span>
-
-                @endif
-
-            @endif
-
-
-            {{-- Middle Pages --}}
-            @foreach(range(
-                max(1, $logs->currentPage() - 2),
-                min($logs->lastPage(), $logs->currentPage() + 2)
-            ) as $page)
-
-                @if($page == $logs->currentPage())
-
-                    <span class="page-number active">
-                        {{ $page }}
-                    </span>
-
-                @else
-
-                    <a href="{{ $logs->url($page) }}" class="page-number">
-                        {{ $page }}
-                    </a>
-
-                @endif
-
-            @endforeach
-
-
-            {{-- Last Page --}}
-            @if($logs->currentPage() < $logs->lastPage() - 2)
-
-                @if($logs->currentPage() < $logs->lastPage() - 3)
-
-                    <span class="dots">...</span>
-
-                @endif
-
-                <a href="{{ $logs->url($logs->lastPage()) }}" class="page-number">
-                    {{ $logs->lastPage() }}
-                </a>
-
-            @endif
-
-
-            {{-- Next Button --}}
-            @if ($logs->hasMorePages())
-
-                <a href="{{ $logs->nextPageUrl() }}" class="page-btn">
-                    Next →
-                </a>
-
-            @else
-
-                <span class="page-btn disabled">
-                    Next →
-                </span>
-
-            @endif
-
-        </div>
-
+        @if($logs->hasPages())
+            <div class="pagination">
+                {{ $logs->appends(request()->query())->links() }}
+            </div>
+        @endif
     </div>
-
 </body>
-
 </html>

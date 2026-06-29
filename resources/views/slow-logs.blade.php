@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slow Logs - Performance Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -238,6 +239,20 @@
             border: 1px solid #bfdbfe;
         }
 
+        .chart-card {
+            background: white;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-card h3 {
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+            color: #2d3748;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -268,7 +283,6 @@
             </form>
         </div>
 
-        <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="label">Total Slow Queries</div>
@@ -288,7 +302,41 @@
             </div>
         </div>
 
-        <!-- Index Suggestions -->
+        <div class="chart-card">
+            <h3>Weekly Slow Query Trend</h3>
+            <canvas id="weeklyChart" height="80"></canvas>
+        </div>
+
+        @if(session('explain'))
+            <div class="chart-card">
+                <h3>EXPLAIN Result (Log #{{ session('explain_id') }})</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                @foreach((array) session('explain')[0] as $key => $val)
+                                    <th>{{ $key }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(session('explain') as $row)
+                                <tr>
+                                    @foreach((array) $row as $val)
+                                        <td>{{ $val }}</td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
+        @if(session('explain_error'))
+            <div class="alert alert-info" style="margin-bottom: 1.5rem;">{{ session('explain_error') }}</div>
+        @endif
+
         @if($indexSuggestions->count() > 0)
             <div class="alert alert-info" style="margin-bottom: 1.5rem;">
                 <strong> Index Suggestions:</strong>
@@ -300,7 +348,6 @@
             </div>
         @endif
 
-        <!-- Slowest Queries Summary -->
         @if($slowestQueries->count() > 0)
             <div style="background: white; border-radius: 0.5rem; border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1.5rem;">
                 <h3 style="font-size: 0.875rem; margin-bottom: 0.75rem;"> Top 5 Slowest Queries</h3>
@@ -316,7 +363,6 @@
             </div>
         @endif
 
-        <!-- Filter Bar -->
         <form method="GET" class="filter-bar">
             <div class="filter-group">
                 <label>Search SQL</label>
@@ -336,7 +382,6 @@
             </div>
         </form>
 
-        <!-- Logs Table -->
         <div class="table-wrapper">
             <table>
                 <thead>
@@ -376,6 +421,7 @@
                         <td>{{ \Carbon\Carbon::parse($log->created_at)->diffForHumans() }}</td>
                         <td>
                             <a href="{{ route('slow-logs.show', $log->id) }}" style="text-decoration: none; color: #3b82f6;">View</a>
+                            <a href="{{ route('slow-logs.explain', $log->id) }}" style="text-decoration: none; color: #16a34a; margin-left: 0.5rem;">Explain</a>
                             <form action="{{ route('slow-logs.destroy', $log->id) }}" method="POST" style="display: inline;">
                                 @csrf
                                 @method('DELETE')
@@ -398,5 +444,24 @@
             </div>
         @endif
     </div>
+
+    <script>
+    new Chart(document.getElementById('weeklyChart'), {
+        type: 'bar',
+        data: {
+            labels: @json($weeklyLabels),
+            datasets: [{
+                label: 'Slow Queries',
+                data: @json($weeklyData),
+                backgroundColor: '#3b82f6'
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+    </script>
 </body>
 </html>

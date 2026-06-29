@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/ProductController.php
 
 namespace App\Http\Controllers;
 
@@ -13,14 +12,12 @@ class ProductController extends Controller
     {
         $start = microtime(true);
 
-        // Get filter and sort parameters
         $sortBy = $request->get('sort', 'id');
         $sortOrder = $request->get('order', 'asc');
         $minPrice = $request->get('min_price');
         $maxPrice = $request->get('max_price');
         $search = $request->get('search');
 
-        // Build query with filters
         $query = Product::query();
 
         if ($search) {
@@ -35,7 +32,6 @@ class ProductController extends Controller
             $query->where('price', '<=', $maxPrice);
         }
 
-        // Simulate heavy query based on sort
         if ($sortBy === 'random') {
             $query->orderByRaw('RAND()');
             $isHeavy = true;
@@ -52,14 +48,12 @@ class ProductController extends Controller
 
         $products = $query->paginate(15);
 
-        // Add delay for slow query simulation
         if ($isHeavy || $request->get('simulate_slow')) {
             usleep(rand(200000, 500000));
         }
 
         $executionTime = (microtime(true) - $start) * 1000;
 
-        // Store slow query log if execution time > 100ms
         if ($executionTime > 100) {
             $sql = $query->toSql();
             $bindings = $query->getBindings();
@@ -89,7 +83,6 @@ class ProductController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Check for index suggestions
             $this->checkIndexSuggestion($sql);
         }
 
@@ -100,7 +93,12 @@ class ProductController extends Controller
             'min_price' => Product::min('price'),
         ];
 
-        return view('products', compact('products', 'stats', 'executionTime', 'isHeavy' ?? false));
+        return view('products', [
+            'products' => $products,
+            'stats' => $stats,
+            'executionTime' => $executionTime,
+            'isHeavy' => $isHeavy ?? false,
+        ]);
     }
 
     private function getRecommendation($sortBy, $time)
@@ -133,7 +131,6 @@ class ProductController extends Controller
                 ->where('query_hash', $hash)
                 ->increment('frequency');
         } else {
-            // Detect columns that might need indexes
             preg_match_all('/WHERE\s+(\w+)\s*[=<>!]+/i', $sql, $matches);
 
             if (!empty($matches[1])) {

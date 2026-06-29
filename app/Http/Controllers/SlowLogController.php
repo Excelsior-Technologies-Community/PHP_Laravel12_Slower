@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/SlowLogController.php
 
 namespace App\Http\Controllers;
 
@@ -13,7 +12,6 @@ class SlowLogController extends Controller
     {
         $query = DB::table('slow_logs');
 
-        // Search filters
         if ($request->search) {
             $query->where(function($q) use ($request) {
                 $q->where('sql', 'LIKE', '%' . $request->search . '%')
@@ -43,13 +41,11 @@ class SlowLogController extends Controller
 
         $logs = $query->orderBy('time', 'desc')->paginate(15);
 
-        // Statistics
         $totalLogs = DB::table('slow_logs')->count();
         $maxTime = DB::table('slow_logs')->max('time');
         $avgTime = round(DB::table('slow_logs')->avg('time'), 2);
         $todayLogs = DB::table('slow_logs')->whereDate('created_at', today())->count();
 
-        // Advanced statistics
         $slowestQueries = DB::table('slow_logs')
             ->select('sql', DB::raw('COUNT(*) as count'), DB::raw('AVG(time) as avg_time'))
             ->groupBy('sql')
@@ -69,6 +65,15 @@ class SlowLogController extends Controller
             ->orderBy('frequency', 'desc')
             ->get();
 
+        $weeklyLabels = [];
+        $weeklyData = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $weeklyLabels[] = now()->subDays($i)->format('D, M j');
+            $weeklyData[] = DB::table('slow_logs')->whereDate('created_at', $date)->count();
+        }
+
         return view('slow-logs', compact(
             'logs',
             'totalLogs',
@@ -77,7 +82,9 @@ class SlowLogController extends Controller
             'todayLogs',
             'slowestQueries',
             'logsByHour',
-            'indexSuggestions'
+            'indexSuggestions',
+            'weeklyLabels',
+            'weeklyData'
         ));
     }
 
@@ -108,7 +115,6 @@ class SlowLogController extends Controller
     {
         $log = DB::table('slow_logs')->find($id);
 
-        // Advanced analysis
         $analysis = [
             'has_order_by_random' => str_contains($log->sql, 'RAND()'),
             'has_like_wildcard' => str_contains($log->sql, 'LIKE \'%%'),
@@ -116,7 +122,6 @@ class SlowLogController extends Controller
             'suggested_indexes' => [],
         ];
 
-        // Suggest indexes based on query
         preg_match_all('/WHERE\s+(\w+)\s*=/i', $log->sql, $whereColumns);
 
         foreach ($whereColumns[1] as $column) {
@@ -140,6 +145,25 @@ class SlowLogController extends Controller
         ]);
 
         return redirect()->route('slow-logs')->with('analysis', $analysis);
+    }
+
+    public function explain($id)
+    {
+        $log = DB::table('slow_logs')->find($id);
+
+        if (!$log) {
+            abort(404);
+        }
+
+        $bindings = json_decode($log->bindings, true) ?? [];
+
+        try {
+            $explainResult = DB::select('EXPLAIN ' . $log->sql, $bindings);
+        } catch (\Exception $e) {
+            return redirect()->route('slow-logs')->with('explain_error', $e->getMessage());
+        }
+
+        return redirect()->route('slow-logs')->with('explain', $explainResult)->with('explain_id', $id);
     }
 
     private function generateDetailedRecommendation($analysis, $log)

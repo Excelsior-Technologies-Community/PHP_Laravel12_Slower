@@ -1,5 +1,4 @@
 <?php
-// routes/web.php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
@@ -15,3 +14,4 @@ Route::get('/slow-logs/{id}', [SlowLogController::class, 'show'])->name('slow-lo
 Route::delete('/slow-logs/{id}', [SlowLogController::class, 'destroy'])->name('slow-logs.destroy');
 Route::post('/slow-logs/clear', [SlowLogController::class, 'clearAll'])->name('slow-logs.clear');
 Route::post('/slow-logs/analyze/{id}', [SlowLogController::class, 'analyze'])->name('slow-logs.analyze');
+Route::get('/slow-logs/explain/{id}', [SlowLogController::class, 'explain'])->name('slow-logs.explain');
